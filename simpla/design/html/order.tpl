@@ -1,9 +1,19 @@
+{* Вкладки *}
 {capture name=tabs}
+	{if in_array('orders', $manager->permissions)}
 		<li {if $order->status==0}class="active"{/if}><a href="{url module=OrdersAdmin status=0 id=null}">Новые</a></li>
 		<li {if $order->status==1}class="active"{/if}><a href="{url module=OrdersAdmin status=1 id=null}">Приняты</a></li>
 		<li {if $order->status==2}class="active"{/if}><a href="{url module=OrdersAdmin status=2 id=null}">Выполнены</a></li>
 		<li {if $order->status==3}class="active"{/if}><a href="{url module=OrdersAdmin status=3 id=null}">Удалены</a></li>
+	{if $keyword}
+	<li class="active"><a href="{url module=OrdersAdmin keyword=$keyword id=null label=null}">Поиск</a></li>
+	{/if}
+	{/if}
+	{if in_array('labels', $manager->permissions)}
+	<li><a href="{url module=OrdersLabelsAdmin keyword=null id=null page=null label=null}">Метки</a></li>
+	{/if}
 {/capture}
+
 
 {if $order->id}
 {$meta_title = "Заказ №`$order->id`" scope=parent}
@@ -122,8 +132,28 @@
 	</div>
 
 	
+	{if $labels}
 	<div class='layer'>
-	<h2>Пользователь <a href='#' class="edit_user"><img src='design/images/pencil.png' alt='Редактировать' title='Редактировать'></a> {if $user}<a href="#" class='delete_user'><img src='design/images/delete.png' alt='Удалить' title='Удалить'></a>{/if}</h2>
+	<h2>Метка</h2>
+	<!-- Метки -->
+	<ul>
+		{foreach $labels as $l}
+		<li>
+		<label for="label_{$l->id}">
+		<input id="label_{$l->id}" type="checkbox" name="order_labels[]" value="{$l->id}" {if in_array($l->id, $order_labels)}checked{/if}>
+		<span style="background-color:#{$l->color};" class="order_label"></span>
+		{$l->name}
+		</label>
+		</li>
+		{/foreach}
+	</ul>
+	<!-- Метки -->
+	</div>
+	{/if}
+
+	
+	<div class='layer'>
+	<h2>Покупатель <a href='#' class="edit_user"><img src='design/images/pencil.png' alt='Редактировать' title='Редактировать'></a> {if $user}<a href="#" class='delete_user'><img src='design/images/delete.png' alt='Удалить' title='Удалить'></a>{/if}</h2>
 		<div class='view_user'>
 		{if !$user}
 			Не зарегистрирован
@@ -154,6 +184,7 @@
 		</li>
 	</ul>
 	</div>
+		
 </div>
 
 
@@ -209,12 +240,12 @@
 				</span>
 				<span class=edit_purchase style='display:none;'>
 					{if $purchase->variant}
-					{math equation="max(x,y)" x=$purchase->variant->stock y=$purchase->amount assign="loop"}
+					{math equation="min(max(x,y),z)" x=$purchase->variant->stock+$purchase->amount*($order->closed) y=$purchase->amount z=$settings->max_order_amount assign="loop"}
 					{else}
 					{math equation="x" x=$purchase->amount assign="loop"}
 					{/if}
 			        <select name=purchases[amount][{$purchase->id}]>
-						{section name=amounts start=1 loop=$loop+1 step=1 max=$settings->max_order_amount}
+						{section name=amounts start=1 loop=$loop+1 step=1}
 							<option value="{$smarty.section.amounts.index}" {if $purchase->amount==$smarty.section.amounts.index}selected{/if}>{$smarty.section.amounts.index} {$settings->units}</option>
 						{/section}
 			        </select>

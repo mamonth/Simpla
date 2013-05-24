@@ -101,7 +101,8 @@ class Categories extends Simpla
 		$this->db->query("INSERT INTO __categories SET ?%", $category);
 		$id = $this->db->insert_id();
 		$this->db->query("UPDATE __categories SET position=id WHERE id=?", $id);		
-		$this->init_categories();		
+		unset($this->categories_tree);	
+		unset($this->all_categories);	
 		return $id;
 	}
 	
@@ -110,27 +111,32 @@ class Categories extends Simpla
 	{
 		$query = $this->db->placehold("UPDATE __categories SET ?% WHERE id=? LIMIT 1", $category, intval($id));
 		$this->db->query($query);
-		$this->init_categories();
+		unset($this->categories_tree);			
+		unset($this->all_categories);	
 		return $id;
 	}
 	
 	// Удаление категории
-	public function delete_category($id)
+	public function delete_category($ids)
 	{
-		if(!$category = $this->get_category(intval($id)))
-			return false;
-		foreach($category->children as $id)
+		$ids = (array) $ids;
+		foreach($ids as $id)
 		{
-			if(!empty($id))
+			if($category = $this->get_category(intval($id)))
+			foreach($category->children as $id)
 			{
-				$this->delete_image($id);
-				$query = $this->db->placehold("DELETE FROM __categories WHERE id=? LIMIT 1", $id);
-				$this->db->query($query);
-				$query = $this->db->placehold("DELETE FROM __products_categories WHERE category_id=?", $id);
-				$this->db->query($query);
-				$this->init_categories();			
+				if(!empty($id))
+				{
+					$this->delete_image($id);
+					$query = $this->db->placehold("DELETE FROM __categories WHERE id=? LIMIT 1", $id);
+					$this->db->query($query);
+					$query = $this->db->placehold("DELETE FROM __products_categories WHERE category_id=?", $id);
+					$this->db->query($query);
+				}
 			}
 		}
+		unset($this->categories_tree);			
+		unset($this->all_categories);	
 		return true;
 	}
 	
@@ -165,7 +171,8 @@ class Categories extends Simpla
 			{			
 				@unlink($this->config->root_dir.$this->config->categories_images_dir.$filename);		
 			}
-			$this->init_categories();
+			unset($this->categories_tree);
+			unset($this->all_categories);	
 		}
 	}
 
